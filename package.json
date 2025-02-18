@@ -1,0 +1,19 @@
+{
+  "name": "apiserver",
+  "version": "1.0.0",
+  "description": "REST API para administrador de productos",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gabrielbustosdev/administrador-de-productos-api-server.git"
+  },
+  "author": "Gabriel Bustos",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/gabrielbustosdev/administrador-de-productos-api-server/issues"
+  },
+  "homepage": "https://github.com/gabrielbustosdev/administrador-de-productos-api-server#readme"
+}
