@@ -4,7 +4,8 @@
   "description": "REST API para administrador de productos",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon --exec ts-node ./src/index.ts"
   },
   "repository": {
     "type": "git",
@@ -15,5 +16,15 @@
   "bugs": {
     "url": "https://github.com/gabrielbustosdev/administrador-de-productos-api-server/issues"
   },
-  "homepage": "https://github.com/gabrielbustosdev/administrador-de-productos-api-server#readme"
+  "homepage": "https://github.com/gabrielbustosdev/administrador-de-productos-api-server#readme",
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.4",
+    "nodemon": "^3.1.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
 }
