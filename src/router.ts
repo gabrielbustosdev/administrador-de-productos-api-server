@@ -2,56 +2,128 @@ import { Router } from 'express'
 import { body, param } from 'express-validator'
 import { createProduct, deleteProduct, getProductById, getProducts, updateAvailability, updateProduct } from './handlers/product'
 import { handleInputErrors } from './middleware/index'
-import { authenticateToken, requireAdmin, requireUser } from './middleware/auth'
+import { authenticateToken, requireAdmin } from './middleware/auth'
 
 const router = Router()
 
 /**
  * @swagger
  * components:
- *   securitySchemes:
- *     bearerAuth:
- *       type: http
- *       scheme: bearer
- *       bearerFormat: JWT
  *   schemas:
  *     Product:
  *       type: object
+ *       required:
+ *         - name
+ *         - price
  *       properties:
  *          id:
  *            type: integer
- *            description: The auto-generated ID of the product
+ *            description: ID único auto-generado del producto
  *            example: 1
  *          name:
  *            type: string
- *            description: The name of the product
- *            example: "Product 1"   
+ *            description: Nombre del producto
+ *            example: "Laptop Dell XPS 13"
+ *            maxLength: 100
  *          price:
  *            type: number
- *            description: The price of the product
- *            example: 100
+ *            format: float
+ *            description: Precio del producto en la moneda local
+ *            example: 1299.99
+ *            minimum: 0
  *          availability:
  *            type: boolean
- *            description: The availability of the product
+ *            description: Estado de disponibilidad del producto
  *            example: true
+ *            default: true
+ *          createdAt:
+ *            type: string
+ *            format: date-time
+ *            description: Fecha de creación del producto
+ *            example: "2024-01-15T10:30:00.000Z"
+ *          updatedAt:
+ *            type: string
+ *            format: date-time
+ *            description: Fecha de última actualización del producto
+ *            example: "2024-01-15T10:30:00.000Z"
+ *     Error:
+ *       type: object
+ *       properties:
+ *         error:
+ *           type: string
+ *           description: Mensaje de error descriptivo
+ *           example: "Producto no encontrado"
+ *     ValidationError:
+ *       type: object
+ *       properties:
+ *         errors:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               field:
+ *                 type: string
+ *                 description: Campo que causó el error
+ *               message:
+ *                 type: string
+ *                 description: Mensaje de error de validación
  */
 
 /**
  * @swagger
  * /api/products:
  *   get:
- *     summary: Get all products
+ *     summary: Obtener todos los productos
  *     tags: [Products]
- *     description: Return a list of products
+ *     description: Retorna una lista paginada de todos los productos disponibles
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Número de página para paginación
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Número de productos por página
+ *       - in: query
+ *         name: available
+ *         schema:
+ *           type: boolean
+ *         description: Filtrar por disponibilidad
  *     responses:
  *       200:
- *         description: Successful response
+ *         description: Lista de productos obtenida exitosamente
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Product'
+ *               type: object
+ *               properties:
+ *                 products:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Product'
+ *                 total:
+ *                   type: integer
+ *                   description: Total de productos
+ *                 page:
+ *                   type: integer
+ *                   description: Página actual
+ *                 totalPages:
+ *                   type: integer
+ *                   description: Total de páginas
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/', getProducts)
 
@@ -59,28 +131,43 @@ router.get('/', getProducts)
  * @swagger
  * /api/products/{id}:
  *   get:
- *     summary: Get a product by ID
- *     tags: 
- *       - Products
- *     description: Return a product based on its unique ID
+ *     summary: Obtener producto por ID
+ *     tags: [Products]
+ *     description: Retorna un producto específico basado en su ID único
  *     parameters:
  *       - in: path
  *         name: id
- *         description: The ID of the product to retrieve 
+ *         description: ID único del producto a obtener
  *         required: true
  *         schema:
  *           type: integer
+ *           minimum: 1
+ *         example: 1
  *     responses:
  *       200:
- *         description: Successful response
+ *         description: Producto encontrado exitosamente
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Product'
- *       404:
- *         description: Product not found
  *       400:
- *         description: Bad Request - Invalid ID provided
+ *         description: ID inválido proporcionado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationError'
+ *       404:
+ *         description: Producto no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/:id',
     param('id').isInt().withMessage('ID no válido'),
@@ -92,10 +179,9 @@ router.get('/:id',
  * @swagger
  * /api/products:
  *   post:
- *     summary: Create a new product
- *     tags: 
- *       - Products
- *     description: Returns a new record in the database
+ *     summary: Crear nuevo producto
+ *     tags: [Products]
+ *     description: Crea un nuevo producto en la base de datos. Requiere autenticación de administrador.
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -104,38 +190,71 @@ router.get('/:id',
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - name
+ *               - price
  *             properties:
  *               name:
  *                 type: string
- *                 example: "Product 1"
- *                 description: The name of the product
+ *                 description: Nombre del producto
+ *                 example: "iPhone 15 Pro"
+ *                 maxLength: 100
  *               price:
  *                 type: number
- *                 example: 100
- *                 description: The price of the product
+ *                 format: float
+ *                 description: Precio del producto
+ *                 example: 999.99
+ *                 minimum: 0
+ *               availability:
+ *                 type: boolean
+ *                 description: Disponibilidad del producto (opcional, por defecto true)
+ *                 example: true
+ *                 default: true
  *     responses:
  *       201:
- *         description: Successful response
+ *         description: Producto creado exitosamente
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Product'
  *       400:
- *         description: Bad Request - Invalid request body
+ *         description: Datos de entrada inválidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationError'
  *       401:
- *         description: Unauthorized - Token required
+ *         description: Token de autenticación requerido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       403:
- *         description: Forbidden - Invalid token or insufficient permissions
+ *         description: Permisos insuficientes - Se requiere rol de administrador
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.post('/',
     authenticateToken,
     requireAdmin,
     body('name')
-        .notEmpty().withMessage('El nombre de Producto no puede ir vacio'),
+        .notEmpty().withMessage('El nombre de Producto no puede ir vacio')
+        .isLength({ max: 100 }).withMessage('El nombre no puede exceder 100 caracteres'),
     body('price')
         .isNumeric().withMessage('Valor no válido')
         .notEmpty().withMessage('El precio de Producto no puede ir vacio')
         .custom(value => value > 0).withMessage('Precio no válido'),
+    body('availability')
+        .optional()
+        .isBoolean().withMessage('Valor para disponibilidad no válido'),
     handleInputErrors,
     createProduct
 )
@@ -144,60 +263,91 @@ router.post('/',
  * @swagger
  * /api/products/{id}:
  *   put:
- *     summary: Update a product by ID
- *     tags: 
- *       - Products
- *     description: Update a product based on its unique ID
+ *     summary: Actualizar producto completo
+ *     tags: [Products]
+ *     description: Actualiza todos los campos de un producto específico. Requiere autenticación de administrador.
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
- *         description: The ID of the product to update
+ *         description: ID del producto a actualizar
  *         required: true
  *         schema:
  *           type: integer
+ *           minimum: 1
+ *         example: 1
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - name
+ *               - price
+ *               - availability
  *             properties:
  *               name:
  *                 type: string
- *                 example: "Product 1"
- *                 description: The name of the product
+ *                 description: Nuevo nombre del producto
+ *                 example: "iPhone 15 Pro Max"
+ *                 maxLength: 100
  *               price:
  *                 type: number
- *                 example: 100
- *                 description: The price of the product
+ *                 format: float
+ *                 description: Nuevo precio del producto
+ *                 example: 1199.99
+ *                 minimum: 0
  *               availability:
  *                 type: boolean
+ *                 description: Nueva disponibilidad del producto
  *                 example: true
- *                 description: The availability of the product
  *     responses:
  *       200:
- *         description: Successful response
+ *         description: Producto actualizado exitosamente
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Product'
  *       400:
- *         description: Bad Request - Invalid ID or invalid input data
+ *         description: ID inválido o datos de entrada incorrectos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationError'
  *       401:
- *         description: Unauthorized - Token required
+ *         description: Token de autenticación requerido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       403:
- *         description: Forbidden - Invalid token or insufficient permissions
+ *         description: Permisos insuficientes - Se requiere rol de administrador
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       404:
- *         description: Product not found
+ *         description: Producto no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.put('/:id',
     authenticateToken,
     requireAdmin,
     param('id').isInt().withMessage('ID no válido'),
     body('name')
-        .notEmpty().withMessage('El nombre de Producto no puede ir vacio'),
+        .notEmpty().withMessage('El nombre de Producto no puede ir vacio')
+        .isLength({ max: 100 }).withMessage('El nombre no puede exceder 100 caracteres'),
     body('price')
         .isNumeric().withMessage('Valor no válido')
         .notEmpty().withMessage('El precio de Producto no puede ir vacio')
@@ -212,34 +362,57 @@ router.put('/:id',
  * @swagger 
  * /api/products/{id}:
  *   patch:
- *     summary: Update the availability of a product by ID
- *     tags: 
- *       - Products
- *     description: Update the availability of a product based on its unique ID
+ *     summary: Cambiar disponibilidad del producto
+ *     tags: [Products]
+ *     description: Actualiza únicamente el estado de disponibilidad de un producto. Requiere autenticación de administrador.
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
- *         description: The ID of the product to update
+ *         description: ID del producto a actualizar
  *         required: true
  *         schema:
  *           type: integer
+ *           minimum: 1
+ *         example: 1
  *     responses:
  *       200:
- *         description: Successful response
+ *         description: Disponibilidad actualizada exitosamente
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Product'
  *       400:
- *         description: Bad Request - Invalid ID 
+ *         description: ID inválido proporcionado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationError'
  *       401:
- *         description: Unauthorized - Token required
+ *         description: Token de autenticación requerido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       403:
- *         description: Forbidden - Invalid token or insufficient permissions
+ *         description: Permisos insuficientes - Se requiere rol de administrador
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       404:
- *         description: Product not found
+ *         description: Producto no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.patch('/:id',
     authenticateToken,
@@ -253,35 +426,61 @@ router.patch('/:id',
  * @swagger
  * /api/products/{id}:
  *   delete:
- *     summary: Delete a product by ID
- *     tags: 
- *       - Products
- *     description: Delete a product based on its unique ID
+ *     summary: Eliminar producto
+ *     tags: [Products]
+ *     description: Elimina permanentemente un producto de la base de datos. Requiere autenticación de administrador.
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
- *         description: The ID of the product to delete
+ *         description: ID del producto a eliminar
  *         required: true
  *         schema:
  *           type: integer
+ *           minimum: 1
+ *         example: 1
  *     responses:
  *       200:
- *         description: Successful response
+ *         description: Producto eliminado exitosamente
  *         content:
  *           application/json:
  *             schema:
- *               type: string
- *               value: "Producto Eliminado"
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Producto Eliminado"
  *       400:
- *         description: Bad Request - Invalid ID
+ *         description: ID inválido proporcionado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationError'
  *       401:
- *         description: Unauthorized - Token required
+ *         description: Token de autenticación requerido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       403:
- *         description: Forbidden - Invalid token or insufficient permissions
- *       404:   
- *         description: Product not found
+ *         description: Permisos insuficientes - Se requiere rol de administrador
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Producto no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.delete('/:id',
     authenticateToken,

@@ -6,7 +6,7 @@ Una API REST completa desarrollada en **Node.js** con **TypeScript** para la ges
 
 - **🔧 Stack Tecnológico Moderno**: Node.js, TypeScript, Express.js
 - **🗄️ Base de Datos**: PostgreSQL con Sequelize ORM
-- **📚 Documentación Automática**: Swagger/OpenAPI integrado
+- **📚 Documentación Automática**: Swagger/OpenAPI integrado con documentación profesional
 - **🧪 Testing Completo**: Jest con supertest para testing de endpoints
 - **🛡️ Validación de Datos**: Express-validator para validación robusta
 - **🔒 Seguridad**: CORS configurado, validación de entrada, Autenticación JWT
@@ -37,11 +37,11 @@ Una API REST completa desarrollada en **Node.js** con **TypeScript** para la ges
 ## 📋 Endpoints Disponibles
 
 ### 🔐 Autenticación
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| `POST` | `/api/auth/register` | Registrar nuevo usuario |
-| `POST` | `/api/auth/login` | Iniciar sesión |
-| `GET` | `/api/auth/profile` | Obtener perfil del usuario |
+| Método | Endpoint | Descripción | Autenticación |
+|--------|----------|-------------|---------------|
+| `POST` | `/api/auth/register` | Registrar nuevo usuario | Público |
+| `POST` | `/api/auth/login` | Iniciar sesión | Público |
+| `GET` | `/api/auth/profile` | Obtener perfil del usuario | JWT |
 
 ### 🛍️ Productos
 | Método | Endpoint | Descripción | Autenticación |
@@ -55,12 +55,27 @@ Una API REST completa desarrollada en **Node.js** con **TypeScript** para la ges
 
 ## 🗄️ Modelo de Datos
 
+### Producto
 ```typescript
 interface Product {
   id: number;           // ID auto-generado
   name: string;         // Nombre del producto (máx. 100 caracteres)
-  price: number;        // Precio del producto
+  price: number;        // Precio del producto (mínimo 0)
   availability: boolean; // Disponibilidad (default: true)
+  createdAt: Date;      // Fecha de creación
+  updatedAt: Date;      // Fecha de última actualización
+}
+```
+
+### Usuario
+```typescript
+interface User {
+  id: number;           // ID auto-generado
+  email: string;        // Email único del usuario
+  name: string;         // Nombre completo (2-50 caracteres)
+  role: 'admin' | 'user'; // Rol del usuario
+  createdAt: Date;      // Fecha de creación
+  updatedAt: Date;      // Fecha de última actualización
 }
 ```
 
@@ -129,11 +144,69 @@ Una vez que el servidor esté ejecutándose, puedes acceder a la documentación 
 http://localhost:4000/docs
 ```
 
-La documentación incluye:
-- Todos los endpoints disponibles
-- Esquemas de datos
-- Ejemplos de requests y responses
-- Interfaz personalizada con logo del proyecto
+### 🌐 Usar la Documentación desde el Navegador
+
+La documentación de Swagger está **completamente configurada** para funcionar desde el navegador. Puedes:
+
+#### ✅ **Hacer Consultas Directas**
+- **Probar endpoints**: Usa el botón "Try it out" en cada endpoint
+- **Enviar requests**: Completa los parámetros y ejecuta las consultas
+- **Ver responses**: Obtén respuestas reales de la API
+- **Autenticación**: Configura tokens JWT para endpoints protegidos
+
+#### ✅ **Configuración Automática**
+- **CORS habilitado**: Requests desde navegador permitidos
+- **Headers automáticos**: Content-Type y Authorization configurados
+- **Logs de debugging**: Console logs para monitorear requests
+- **Persistencia de tokens**: Los tokens se mantienen entre sesiones
+
+#### ✅ **Características de la Documentación**
+
+- **📖 Documentación Completa**: Todos los endpoints con descripciones detalladas
+- **🔐 Autenticación JWT**: Configuración automática de tokens
+- **📝 Esquemas de Datos**: Modelos completos con validaciones
+- **✅ Ejemplos de Uso**: Requests y responses de ejemplo
+- **🎨 Interfaz Personalizada**: Logo y favicon del proyecto
+- **🔍 Filtros y Búsqueda**: Navegación mejorada
+- **📱 Responsive**: Compatible con dispositivos móviles
+
+### Cómo Usar la Documentación
+
+1. **Acceder a la documentación**: Ve a `http://localhost:4000/docs`
+2. **Autenticarse**: Usa el botón "Authorize" para configurar tu token JWT
+3. **Explorar endpoints**: Navega por las diferentes secciones (Auth, Products)
+4. **Probar endpoints**: Usa la interfaz interactiva para hacer requests
+5. **Ver esquemas**: Consulta los modelos de datos en la sección "Schemas"
+
+### Ejemplo de Uso con cURL
+
+```bash
+# Registrar usuario
+curl -X POST http://localhost:4000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"usuario@ejemplo.com","password":"password123","name":"Juan Pérez"}'
+
+# Login
+curl -X POST http://localhost:4000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"usuario@ejemplo.com","password":"password123"}'
+
+# Crear producto (requiere token de admin)
+curl -X POST http://localhost:4000/api/products \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer TU_TOKEN_JWT" \
+  -d '{"name":"Laptop Dell XPS 13","price":1299.99}'
+```
+
+### 🔧 Configuración Técnica
+
+La API está configurada con:
+
+- **CORS habilitado** para `localhost:4000`, `localhost:3000`, y otros orígenes de desarrollo
+- **Headers automáticos** para requests JSON
+- **Preflight requests** manejados correctamente
+- **Logs de debugging** para monitorear requests desde navegador
+- **Persistencia de autorización** en Swagger UI
 
 ## 🔧 Scripts Disponibles
 
@@ -154,6 +227,7 @@ src/
 ├── handlers/         # Controladores de endpoints
 ├── middleware/       # Middleware personalizado
 ├── models/          # Modelos de Sequelize
+├── router/          # Definición de rutas
 ├── __tests__/       # Tests del servidor
 └── index.ts         # Punto de entrada
 ```
@@ -172,11 +246,13 @@ src/
 - Testing de casos de error
 - Cobertura de código
 
-### ✅ Documentación Automática
-- Swagger UI integrado
-- Documentación de esquemas
-- Ejemplos de uso
-- Interfaz personalizada
+### ✅ Documentación Profesional
+- Swagger UI integrado con configuración avanzada
+- Documentación de esquemas completos
+- Ejemplos de uso detallados
+- Interfaz personalizada y responsive
+- Filtros y búsqueda mejorados
+- **Consultas desde navegador habilitadas**
 
 ### ✅ Seguridad
 - CORS configurado
@@ -197,17 +273,51 @@ La API incluye un sistema completo de autenticación con JWT:
 ### Flujo de Autenticación
 1. **Registro**: `POST /api/auth/register`
 2. **Login**: `POST /api/auth/login`
-3. **Uso**: Incluir token en header `Authorization: Bearer <token>`
+3. **Usar Token**: Incluir en header `Authorization: Bearer <token>`
 
-Para más detalles sobre la configuración y uso, consulta el archivo `AUTH_SETUP.md`.
+### Ejemplo de Token JWT
+```json
+{
+  "message": "Login exitoso",
+  "user": {
+    "id": 1,
+    "email": "admin@ejemplo.com",
+    "name": "Administrador",
+    "role": "admin"
+  },
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
 
+## 📊 Códigos de Estado HTTP
 
-## 👨‍💻 Autor
+| Código | Descripción |
+|--------|-------------|
+| 200 | OK - Operación exitosa |
+| 201 | Created - Recurso creado |
+| 400 | Bad Request - Datos inválidos |
+| 401 | Unauthorized - Token requerido |
+| 403 | Forbidden - Permisos insuficientes |
+| 404 | Not Found - Recurso no encontrado |
+| 409 | Conflict - Recurso ya existe |
+| 500 | Internal Server Error - Error del servidor |
 
-**Gabriel Bustos**
-- GitHub: [@gabrielbustosdev](https://github.com/gabrielbustosdev)
-- LinkedIn: [Gabriel Bustos](https://www.linkedin.com/in/gabrielbustosdev)
+## 🤝 Contribuir
 
----
+1. Fork el proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
 
-⭐ Si este proyecto te resulta útil, ¡no olvides darle una estrella! 
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
+
+## 📞 Soporte
+
+Si tienes alguna pregunta o necesitas ayuda:
+
+- 📧 Email: soporte@api.com
+- 📖 Documentación: http://localhost:4000/docs
+- 🐛 Issues: [GitHub Issues](https://github.com/gabrielbustosdev/administrador-de-productos-api-server/issues) 
