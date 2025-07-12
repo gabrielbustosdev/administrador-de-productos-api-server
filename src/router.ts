@@ -2,12 +2,18 @@ import { Router } from 'express'
 import { body, param } from 'express-validator'
 import { createProduct, deleteProduct, getProductById, getProducts, updateAvailability, updateProduct } from './handlers/product'
 import { handleInputErrors } from './middleware/index'
+import { authenticateToken, requireAdmin, requireUser } from './middleware/auth'
 
 const router = Router()
 
 /**
  * @swagger
  * components:
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
  *   schemas:
  *     Product:
  *       type: object
@@ -90,6 +96,8 @@ router.get('/:id',
  *     tags: 
  *       - Products
  *     description: Returns a new record in the database
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -114,8 +122,14 @@ router.get('/:id',
  *               $ref: '#/components/schemas/Product'
  *       400:
  *         description: Bad Request - Invalid request body
+ *       401:
+ *         description: Unauthorized - Token required
+ *       403:
+ *         description: Forbidden - Invalid token or insufficient permissions
  */
 router.post('/',
+    authenticateToken,
+    requireAdmin,
     body('name')
         .notEmpty().withMessage('El nombre de Producto no puede ir vacio'),
     body('price')
@@ -134,6 +148,8 @@ router.post('/',
  *     tags: 
  *       - Products
  *     description: Update a product based on its unique ID
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -169,10 +185,16 @@ router.post('/',
  *               $ref: '#/components/schemas/Product'
  *       400:
  *         description: Bad Request - Invalid ID or invalid input data
+ *       401:
+ *         description: Unauthorized - Token required
+ *       403:
+ *         description: Forbidden - Invalid token or insufficient permissions
  *       404:
  *         description: Product not found
  */
 router.put('/:id',
+    authenticateToken,
+    requireAdmin,
     param('id').isInt().withMessage('ID no válido'),
     body('name')
         .notEmpty().withMessage('El nombre de Producto no puede ir vacio'),
@@ -194,6 +216,8 @@ router.put('/:id',
  *     tags: 
  *       - Products
  *     description: Update the availability of a product based on its unique ID
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -210,10 +234,16 @@ router.put('/:id',
  *               $ref: '#/components/schemas/Product'
  *       400:
  *         description: Bad Request - Invalid ID 
+ *       401:
+ *         description: Unauthorized - Token required
+ *       403:
+ *         description: Forbidden - Invalid token or insufficient permissions
  *       404:
  *         description: Product not found
  */
 router.patch('/:id',
+    authenticateToken,
+    requireAdmin,
     param('id').isInt().withMessage('ID no válido'),
     handleInputErrors,
     updateAvailability
@@ -227,6 +257,8 @@ router.patch('/:id',
  *     tags: 
  *       - Products
  *     description: Delete a product based on its unique ID
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -244,10 +276,16 @@ router.patch('/:id',
  *               value: "Producto Eliminado"
  *       400:
  *         description: Bad Request - Invalid ID
+ *       401:
+ *         description: Unauthorized - Token required
+ *       403:
+ *         description: Forbidden - Invalid token or insufficient permissions
  *       404:   
  *         description: Product not found
  */
 router.delete('/:id',
+    authenticateToken,
+    requireAdmin,
     param('id').isInt().withMessage('ID no válido'),
     handleInputErrors,
     deleteProduct
