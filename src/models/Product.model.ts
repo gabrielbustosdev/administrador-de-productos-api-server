@@ -6,6 +6,13 @@ import { Table, Column, Model, DataType, Default } from 'sequelize-typescript'
 
 class Product extends Model {
     @Column({
+        type: DataType.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    })
+    declare id: number
+
+    @Column({
         type: DataType.STRING(100)  
     })
     declare name: string

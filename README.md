@@ -9,7 +9,7 @@ Una API REST completa desarrollada en **Node.js** con **TypeScript** para la ges
 - **📚 Documentación Automática**: Swagger/OpenAPI integrado
 - **🧪 Testing Completo**: Jest con supertest para testing de endpoints
 - **🛡️ Validación de Datos**: Express-validator para validación robusta
-- **🔒 Seguridad**: CORS configurado, validación de entrada
+- **🔒 Seguridad**: CORS configurado, validación de entrada, Autenticación JWT
 - **📊 Logging**: Morgan para logging de requests
 - **🎨 UI Personalizada**: Documentación con logo y favicon personalizados
 
@@ -36,14 +36,22 @@ Una API REST completa desarrollada en **Node.js** con **TypeScript** para la ges
 
 ## 📋 Endpoints Disponibles
 
+### 🔐 Autenticación
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
-| `GET` | `/api/products` | Obtener todos los productos |
-| `GET` | `/api/products/:id` | Obtener producto por ID |
-| `POST` | `/api/products` | Crear nuevo producto |
-| `PUT` | `/api/products/:id` | Actualizar producto completo |
-| `PATCH` | `/api/products/:id` | Cambiar disponibilidad del producto |
-| `DELETE` | `/api/products/:id` | Eliminar producto |
+| `POST` | `/api/auth/register` | Registrar nuevo usuario |
+| `POST` | `/api/auth/login` | Iniciar sesión |
+| `GET` | `/api/auth/profile` | Obtener perfil del usuario |
+
+### 🛍️ Productos
+| Método | Endpoint | Descripción | Autenticación |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/products` | Obtener todos los productos | Público |
+| `GET` | `/api/products/:id` | Obtener producto por ID | Público |
+| `POST` | `/api/products` | Crear nuevo producto | Admin |
+| `PUT` | `/api/products/:id` | Actualizar producto completo | Admin |
+| `PATCH` | `/api/products/:id` | Cambiar disponibilidad del producto | Admin |
+| `DELETE` | `/api/products/:id` | Eliminar producto | Admin |
 
 ## 🗄️ Modelo de Datos
 
@@ -80,9 +88,15 @@ Crear un archivo `.env` en la raíz del proyecto:
 DATABASE_URL=postgresql://usuario:password@localhost:5432/nombre_db
 PORT=4000
 FRONTEND_URL=http://localhost:3000
+JWT_SECRET=tu_clave_secreta_muy_segura_aqui
 ```
 
-### 4. Ejecutar el proyecto
+### 4. Crear usuario administrador (opcional)
+```bash
+npm run create-admin
+```
+
+### 5. Ejecutar el proyecto
 
 **Desarrollo:**
 ```bash
@@ -130,6 +144,7 @@ La documentación incluye:
 | `npm test` | Ejecutar tests con Jest |
 | `npm run test:coverage` | Ejecutar tests con reporte de cobertura |
 | `npm run clear` | Limpiar datos de prueba |
+| `npm run create-admin` | Crear usuario administrador inicial |
 
 ## 🏗️ Arquitectura del Proyecto
 
@@ -166,8 +181,25 @@ src/
 ### ✅ Seguridad
 - CORS configurado
 - Validación de entrada
+- Autenticación JWT
+- Roles de usuario (admin/user)
 - Manejo de errores
 - Logging de requests
+
+## 🔐 Autenticación JWT
+
+La API incluye un sistema completo de autenticación con JWT:
+
+### Roles de Usuario
+- **Admin**: Puede realizar todas las operaciones CRUD en productos
+- **User**: Solo puede leer productos (GET)
+
+### Flujo de Autenticación
+1. **Registro**: `POST /api/auth/register`
+2. **Login**: `POST /api/auth/login`
+3. **Uso**: Incluir token en header `Authorization: Bearer <token>`
+
+Para más detalles sobre la configuración y uso, consulta el archivo `AUTH_SETUP.md`.
 
 
 ## 👨‍💻 Autor
