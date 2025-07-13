@@ -318,6 +318,6 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 
 Si tienes alguna pregunta o necesitas ayuda:
 
-- 📧 Email: soporte@api.com
+- 📧 Email: gabrielbustosdev@gmail.com
 - 📖 Documentación: http://localhost:4000/docs
 - 🐛 Issues: [GitHub Issues](https://github.com/gabrielbustosdev/administrador-de-productos-api-server/issues) 
